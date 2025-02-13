@@ -237,13 +237,32 @@ export default {
 </script>
 
 <style>
+/* Update these styles */
+
+/* Add this to ensure proper box-sizing */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* Add this to ensure html and body take full height */
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
 #app {
   font-family: 'Inter', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   color: #2c3e50;
   height: 100vh;
+  display: flex;
+  flex-direction: column;
   background-color: #f5f6fa;
+  overflow: hidden; /* Prevent double scrollbars */
 }
 
 .navbar {
@@ -253,6 +272,8 @@ export default {
   justify-content: space-between;
   align-items: center;
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  flex-shrink: 0;
+  z-index: 10;
 }
 
 .nav-left {
@@ -312,17 +333,20 @@ export default {
   gap: 2rem;
   padding: 2rem;
   overflow-x: auto;
-  height: calc(100vh - 80px);
+  overflow-y: hidden; /* Prevent vertical scroll on container */
+  flex: 1;
+  height: calc(100% - 2rem); /* Account for padding */
 }
 
 .column {
   background-color: #f1f2f7;
   border-radius: 10px;
   min-width: 300px;
+  width: 300px; /* Fixed width for columns */
   padding: 1rem;
-  min-height: 200px;
   display: flex;
   flex-direction: column;
+  max-height: 100%;
 }
 
 .column-header {
@@ -347,7 +371,23 @@ export default {
 
 .tasks-container {
   flex: 1;
-  min-height: 100px;
+  overflow-y: auto;
+  margin-right: -0.5rem; /* Offset the padding for scrollbar */
+  padding-right: 0.5rem;
+  margin-bottom: 0.5rem; /* Add some space at the bottom */
+}
+
+.tasks-container::-webkit-scrollbar {
+  width: 4px;
+}
+
+.tasks-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.tasks-container::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
 }
 
 .task-card {
@@ -445,7 +485,8 @@ export default {
   display: flex;
   justify-content: center;
   align-items: center;
-  min-height: 200px;
+  width: 300px; /* Match other columns width */
+  min-width: 300px;
 }
 
 .add-column:hover {
