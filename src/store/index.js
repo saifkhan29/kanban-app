@@ -17,6 +17,7 @@ export default createStore({
       editingTask: null,
       selectedColumn: null,
       editingBoard: null,
+      editingColumn: null,
     }
   },
 
@@ -113,6 +114,20 @@ export default createStore({
 
     SET_EDITING_BOARD(state, board) {
       state.editingBoard = board
+    },
+
+    UPDATE_COLUMN(state, { boardId, columnId, title }) {
+      const board = state.boards.find(b => b.id === boardId)
+      if (board) {
+        const column = board.columns.find(col => col.id === columnId)
+        if (column) {
+          column.title = title
+        }
+      }
+    },
+
+    SET_EDITING_COLUMN(state, column) {
+      state.editingColumn = column
     }
   },
 
@@ -181,6 +196,7 @@ export default createStore({
 
     closeColumnForm({ commit }) {
       commit('SET_SHOW_COLUMN_FORM', false)
+      commit('SET_EDITING_COLUMN', null)
     },
 
     openTaskForm({ commit }, column) {
@@ -204,6 +220,20 @@ export default createStore({
     openEditBoardForm({ commit }, board) {
       commit('SET_EDITING_BOARD', board)
       commit('SET_SHOW_BOARD_FORM', true)
+    },
+
+    updateColumn({ commit, state }, { columnId, title }) {
+      if (!columnId || !title) return
+      commit('UPDATE_COLUMN', { 
+        boardId: state.currentBoardId,
+        columnId, 
+        title 
+      })
+    },
+
+    openEditColumnForm({ commit }, column) {
+      commit('SET_EDITING_COLUMN', column)
+      commit('SET_SHOW_COLUMN_FORM', true)
     },
   },
 

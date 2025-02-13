@@ -1,7 +1,7 @@
 <template>
   <div class="form-overlay" @click.self="close">
     <div class="form">
-      <h2>Add New Column</h2>
+      <h2>{{ isEdit ? 'Edit Column' : 'Add New Column' }}</h2>
       <form @submit.prevent="submitForm">
         <div class="form-group">
           <label>Column Title</label>
@@ -22,7 +22,7 @@
             class="submit-btn"
             :disabled="!columnData.title.trim()"
           >
-            Add Column
+            {{ isEdit ? 'Update' : 'Add' }} Column
           </button>
         </div>
       </form>
@@ -31,14 +31,30 @@
 </template>
 
 <script>
-import { reactive } from 'vue'
+import { reactive, watch } from 'vue'
 
 export default {
   name: 'ColumnForm',
+  props: {
+    column: {
+      type: Object,
+      default: null
+    },
+    isEdit: {
+      type: Boolean,
+      default: false
+    }
+  },
   setup(props, { emit }) {
     const columnData = reactive({
       title: ''
     })
+
+    watch(() => props.column, (newColumn) => {
+      if (newColumn) {
+        columnData.title = newColumn.title
+      }
+    }, { immediate: true })
 
     const submitForm = () => {
       if (!columnData.title.trim()) return

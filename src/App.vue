@@ -61,7 +61,16 @@
       >
         <div class="column-header">
           <div class="column-title">
-            <h2>{{ column.title }}</h2>
+            <div class="title-wrapper">
+              <h2>{{ column.title }}</h2>
+              <button 
+                class="edit-column-btn" 
+                @click.stop="openEditColumnForm(column)"
+                title="Edit Column Name"
+              >
+                <span>✎</span>
+              </button>
+            </div>
             <span class="task-count">{{ column.tasks.length }}</span>
           </div>
           <button class="add-task-icon" @click="openTaskForm(column)" title="Add Task">
@@ -115,6 +124,8 @@
 
     <ColumnForm 
       v-if="showColumnForm"
+      :column="editingColumn"
+      :is-edit="!!editingColumn"
       @submit="handleColumnSubmit"
       @close="closeColumnForm"
     />
@@ -165,6 +176,7 @@ export default {
     const editingTask = computed(() => store.state.editingTask)
     const selectedColumn = computed(() => store.state.selectedColumn)
     const editingBoard = computed(() => store.state.editingBoard)
+    const editingColumn = computed(() => store.state.editingColumn)
 
     const handleTaskSubmit = (taskData) => {
       if (!selectedColumn.value) return
@@ -198,7 +210,15 @@ export default {
 
     const handleColumnSubmit = (columnData) => {
       if (!columnData || !columnData.title || !columnData.title.trim()) return
-      store.dispatch('addColumn', columnData)
+      
+      if (editingColumn.value) {
+        store.dispatch('updateColumn', {
+          columnId: editingColumn.value.id,
+          title: columnData.title
+        })
+      } else {
+        store.dispatch('addColumn', columnData)
+      }
       store.dispatch('closeColumnForm')
     }
 
@@ -233,6 +253,11 @@ export default {
       store.dispatch('openEditBoardForm', board)
     }
 
+    const openEditColumnForm = (column) => {
+      if (!column) return
+      store.dispatch('openEditColumnForm', column)
+    }
+
     const toggleDropdown = () => {
       isDropdownOpen.value = !isDropdownOpen.value
     }
@@ -261,6 +286,7 @@ export default {
       editingTask,
       selectedColumn,
       editingBoard,
+      editingColumn,
       handleTaskSubmit,
       handleBoardSubmit,
       handleColumnSubmit,
@@ -274,6 +300,7 @@ export default {
       closeBoardForm: () => store.dispatch('closeBoardForm'),
       closeColumnForm: () => store.dispatch('closeColumnForm'),
       openEditBoardForm,
+      openEditColumnForm,
       isDropdownOpen,
       dropdown,
       toggleDropdown,
@@ -493,6 +520,12 @@ html, body {
   gap: 0.75rem;
 }
 
+.title-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
 .task-count {
   background-color: #e2e4ea;
   padding: 0.25rem 0.75rem;
@@ -658,6 +691,33 @@ html, body {
 }
 
 .edit-board-btn:hover {
+  background-color: rgba(94, 106, 210, 0.1);
+  color: #5e6ad2;
+}
+
+.edit-column-btn {
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  border: none;
+  background-color: transparent;
+  color: #64748b;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9rem;
+  line-height: 1;
+  transition: all 0.2s;
+  opacity: 0.8;
+}
+
+.title-wrapper:hover .edit-column-btn {
+  opacity: 1;
+  color: #475569;
+}
+
+.edit-column-btn:hover {
   background-color: rgba(94, 106, 210, 0.1);
   color: #5e6ad2;
 }
