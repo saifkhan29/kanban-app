@@ -3,7 +3,11 @@
     <div class="navbar">
       <div class="nav-left">
         <h1>Kanban Board</h1>
-        <select v-model="currentBoardId" class="board-select">
+        <select 
+          v-if="boards.length > 0"
+          v-model="currentBoardId" 
+          class="board-select"
+        >
           <option v-for="board in boards" :key="board.id" :value="board.id">
             {{ board.title }}
           </option>
@@ -114,7 +118,11 @@ export default {
     const currentBoard = computed(() => store.getters.currentBoard)
     const currentBoardId = computed({
       get: () => store.state.currentBoardId,
-      set: (value) => store.dispatch('setCurrentBoard', value)
+      set: (value) => {
+        if (value) {
+          store.dispatch('setCurrentBoard', value)
+        }
+      }
     })
     const showTaskForm = computed(() => store.state.showTaskForm)
     const showBoardForm = computed(() => store.state.showBoardForm)

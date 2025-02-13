@@ -21,10 +21,13 @@ export default createStore({
 
   mutations: {
     ADD_BOARD(state, board) {
-      board.id = Date.now()
-      board.columns = []
-      state.boards.push(board)
-      state.currentBoardId = board.id
+      const newBoard = {
+        id: Date.now(),
+        title: board.title,
+        columns: []
+      }
+      state.boards.push(newBoard)
+      state.currentBoardId = newBoard.id
     },
 
     SET_CURRENT_BOARD(state, boardId) {
@@ -103,6 +106,7 @@ export default createStore({
 
   actions: {
     addBoard({ commit }, board) {
+      if (!board || !board.title) return
       commit('ADD_BOARD', board)
     },
 

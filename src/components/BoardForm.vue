@@ -10,12 +10,19 @@
             type="text" 
             required 
             placeholder="Enter board title"
+            class="form-input"
           >
         </div>
         
         <div class="form-actions">
           <button type="button" class="cancel-btn" @click="close">Cancel</button>
-          <button type="submit" class="submit-btn">Create Board</button>
+          <button 
+            type="submit" 
+            class="submit-btn"
+            :disabled="!boardData.title.trim()"
+          >
+            Create Board
+          </button>
         </div>
       </form>
     </div>
@@ -23,21 +30,24 @@
 </template>
 
 <script>
-import { ref } from 'vue'
+import { reactive } from 'vue'
 
 export default {
   name: 'BoardForm',
   setup(props, { emit }) {
-    const boardData = ref({
+    const boardData = reactive({
       title: ''
     })
 
     const submitForm = () => {
-      emit('submit', { ...boardData.value })
+      if (!boardData.title.trim()) return
+      emit('submit', { title: boardData.title.trim() })
+      boardData.title = ''
       close()
     }
 
     const close = () => {
+      boardData.title = ''
       emit('close')
     }
 
@@ -72,5 +82,20 @@ export default {
   max-width: 90%;
 }
 
-/* Rest of the styles same as TaskForm */
+.form-input {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #e2e4ea;
+  border-radius: 6px;
+  font-size: 1rem;
+}
+
+.submit-btn:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
+}
+
+.submit-btn:disabled:hover {
+  background-color: #cccccc;
+}
 </style> 
