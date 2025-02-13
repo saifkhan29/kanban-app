@@ -1,7 +1,7 @@
 <template>
   <div class="form-overlay" @click.self="close">
     <div class="form">
-      <h2>Create New Board</h2>
+      <h2>{{ isEdit ? 'Edit Board' : 'Create New Board' }}</h2>
       <form @submit.prevent="submitForm">
         <div class="form-group">
           <label>Board Title</label>
@@ -21,7 +21,7 @@
             class="submit-btn"
             :disabled="!boardData.title.trim()"
           >
-            Create Board
+            {{ isEdit ? 'Update' : 'Create' }} Board
           </button>
         </div>
       </form>
@@ -30,14 +30,30 @@
 </template>
 
 <script>
-import { reactive } from 'vue'
+import { reactive, watch } from 'vue'
 
 export default {
   name: 'BoardForm',
+  props: {
+    board: {
+      type: Object,
+      default: null
+    },
+    isEdit: {
+      type: Boolean,
+      default: false
+    }
+  },
   setup(props, { emit }) {
     const boardData = reactive({
       title: ''
     })
+
+    watch(() => props.board, (newBoard) => {
+      if (newBoard) {
+        boardData.title = newBoard.title
+      }
+    }, { immediate: true })
 
     const submitForm = () => {
       if (!boardData.title.trim()) return

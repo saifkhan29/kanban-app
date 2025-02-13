@@ -3,15 +3,23 @@
     <div class="navbar">
       <div class="nav-left">
         <h1>Kanban Board</h1>
-        <select 
-          v-if="boards.length > 0"
-          v-model="currentBoardId" 
-          class="board-select"
-        >
-          <option v-for="board in boards" :key="board.id" :value="board.id">
-            {{ board.title }}
-          </option>
-        </select>
+        <div class="board-selector" v-if="boards.length > 0">
+          <select 
+            v-model="currentBoardId" 
+            class="board-select"
+          >
+            <option v-for="board in boards" :key="board.id" :value="board.id">
+              {{ board.title }}
+            </option>
+          </select>
+          <button 
+            class="edit-board-btn" 
+            @click="openEditBoardForm(currentBoard)"
+            title="Edit Board Name"
+          >
+            <span>✎</span>
+          </button>
+        </div>
       </div>
       <div class="nav-actions">
         <button @click="openBoardForm" class="action-btn primary">
@@ -76,6 +84,8 @@
 
     <BoardForm 
       v-if="showBoardForm"
+      :board="editingBoard"
+      :is-edit="!!editingBoard"
       @submit="handleBoardSubmit"
       @close="closeBoardForm"
     />
@@ -129,6 +139,7 @@ export default {
     const showColumnForm = computed(() => store.state.showColumnForm)
     const editingTask = computed(() => store.state.editingTask)
     const selectedColumn = computed(() => store.state.selectedColumn)
+    const editingBoard = computed(() => store.state.editingBoard)
 
     const handleTaskSubmit = (taskData) => {
       if (!selectedColumn.value) return
@@ -149,7 +160,14 @@ export default {
     }
 
     const handleBoardSubmit = (boardData) => {
-      store.dispatch('addBoard', boardData)
+      if (editingBoard.value) {
+        store.dispatch('updateBoard', {
+          boardId: editingBoard.value.id,
+          title: boardData.title
+        })
+      } else {
+        store.dispatch('addBoard', boardData)
+      }
       store.dispatch('closeBoardForm')
     }
 
@@ -185,6 +203,11 @@ export default {
       store.dispatch('openEditTaskForm', { task, column })
     }
 
+    const openEditBoardForm = (board) => {
+      if (!board) return
+      store.dispatch('openEditBoardForm', board)
+    }
+
     return {
       boards,
       currentBoard,
@@ -194,6 +217,7 @@ export default {
       showColumnForm,
       editingTask,
       selectedColumn,
+      editingBoard,
       handleTaskSubmit,
       handleBoardSubmit,
       handleColumnSubmit,
@@ -205,7 +229,8 @@ export default {
       openColumnForm: () => store.dispatch('openColumnForm'),
       closeTaskForm: () => store.dispatch('closeTaskForm'),
       closeBoardForm: () => store.dispatch('closeBoardForm'),
-      closeColumnForm: () => store.dispatch('closeColumnForm')
+      closeColumnForm: () => store.dispatch('closeColumnForm'),
+      openEditBoardForm
     }
   }
 }
@@ -239,6 +264,12 @@ export default {
 .nav-actions {
   display: flex;
   gap: 1rem;
+}
+
+.board-selector {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .board-select {
@@ -438,5 +469,24 @@ export default {
   font-size: 2rem;
   font-weight: 300;
   line-height: 1;
+}
+
+.edit-board-btn {
+  background: transparent;
+  border: none;
+  color: #666;
+  cursor: pointer;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.edit-board-btn:hover {
+  background-color: rgba(94, 106, 210, 0.1);
+  color: #5e6ad2;
 }
 </style>

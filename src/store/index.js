@@ -15,7 +15,8 @@ export default createStore({
       showBoardForm: false,
       showColumnForm: false,
       editingTask: null,
-      selectedColumn: null
+      selectedColumn: null,
+      editingBoard: null,
     }
   },
 
@@ -101,7 +102,18 @@ export default createStore({
     SET_SHOW_BOARD_FORM: (state, value) => state.showBoardForm = value,
     SET_SHOW_COLUMN_FORM: (state, value) => state.showColumnForm = value,
     SET_EDITING_TASK: (state, task) => state.editingTask = task,
-    SET_SELECTED_COLUMN: (state, column) => state.selectedColumn = column
+    SET_SELECTED_COLUMN: (state, column) => state.selectedColumn = column,
+
+    UPDATE_BOARD(state, { boardId, title }) {
+      const board = state.boards.find(b => b.id === boardId)
+      if (board) {
+        board.title = title
+      }
+    },
+
+    SET_EDITING_BOARD(state, board) {
+      state.editingBoard = board
+    }
   },
 
   actions: {
@@ -160,6 +172,7 @@ export default createStore({
 
     closeBoardForm({ commit }) {
       commit('SET_SHOW_BOARD_FORM', false)
+      commit('SET_EDITING_BOARD', null)
     },
 
     openColumnForm({ commit }) {
@@ -181,7 +194,17 @@ export default createStore({
       commit('SET_SHOW_TASK_FORM', false)
       commit('SET_EDITING_TASK', null)
       commit('SET_SELECTED_COLUMN', null)
-    }
+    },
+
+    updateBoard({ commit }, { boardId, title }) {
+      if (!boardId || !title) return
+      commit('UPDATE_BOARD', { boardId, title })
+    },
+
+    openEditBoardForm({ commit }, board) {
+      commit('SET_EDITING_BOARD', board)
+      commit('SET_SHOW_BOARD_FORM', true)
+    },
   },
 
   getters: {
