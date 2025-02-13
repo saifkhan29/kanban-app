@@ -25,8 +25,13 @@
         @drop="handleDrop($event, column.id)"
       >
         <div class="column-header">
-          <h2>{{ column.title }}</h2>
-          <span class="task-count">{{ column.tasks.length }}</span>
+          <div class="column-title">
+            <h2>{{ column.title }}</h2>
+            <span class="task-count">{{ column.tasks.length }}</span>
+          </div>
+          <button class="add-task-icon" @click="openTaskForm(column)" title="Add Task">
+            <span>+</span>
+          </button>
         </div>
         
         <div class="tasks-container">
@@ -54,10 +59,6 @@
             </div>
           </div>
         </div>
-        
-        <button @click="openTaskForm(column)" class="add-task-btn">
-          + Add Task
-        </button>
       </div>
 
       <!-- New Add Column Button -->
@@ -292,6 +293,12 @@ export default {
   margin-bottom: 1rem;
 }
 
+.column-title {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
 .task-count {
   background-color: #e2e4ea;
   padding: 0.25rem 0.75rem;
@@ -370,21 +377,24 @@ export default {
   font-size: 0.8rem;
 }
 
-.add-task-btn {
-  width: 100%;
-  padding: 0.75rem;
-  background-color: white;
-  border: 2px dashed #e2e4ea;
+.add-task-icon {
+  width: 24px;
+  height: 24px;
   border-radius: 6px;
+  border: none;
+  background-color: transparent;
   color: #666;
   cursor: pointer;
-  margin-top: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  line-height: 1;
   transition: all 0.2s;
 }
 
-.add-task-btn:hover {
-  background-color: #f8f9fc;
-  border-color: #5e6ad2;
+.add-task-icon:hover {
+  background-color: rgba(94, 106, 210, 0.1);
   color: #5e6ad2;
 }
 
