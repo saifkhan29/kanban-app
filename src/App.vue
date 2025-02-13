@@ -1,12 +1,24 @@
 <template>
   <div id="app">
     <div class="navbar">
-      <h1>Kanban Board</h1>
+      <div class="nav-left">
+        <h1>Kanban Board</h1>
+        <select v-model="currentBoardId" class="board-select">
+          <option v-for="board in boards" :key="board.id" :value="board.id">
+            {{ board.title }}
+          </option>
+        </select>
+      </div>
+      <div class="nav-actions">
+        <button @click="openBoardForm" class="action-btn primary">
+          + New Board
+        </button>
+      </div>
     </div>
     
     <div class="board-container">
       <div 
-        v-for="column in columns" 
+        v-for="column in currentBoard?.columns" 
         :key="column.id" 
         class="column"
         @dragover.prevent
@@ -47,7 +59,27 @@
           + Add Task
         </button>
       </div>
+
+      <!-- New Add Column Button -->
+      <div class="column add-column" @click="openColumnForm">
+        <div class="add-column-content">
+          <span class="plus-icon">+</span>
+          <span>Add Column</span>
+        </div>
+      </div>
     </div>
+
+    <BoardForm 
+      v-if="showBoardForm"
+      @submit="handleBoardSubmit"
+      @close="closeBoardForm"
+    />
+
+    <ColumnForm 
+      v-if="showColumnForm"
+      @submit="handleColumnSubmit"
+      @close="closeColumnForm"
+    />
 
     <TaskForm 
       v-if="showTaskForm"
@@ -63,18 +95,29 @@
 import { computed, ref } from 'vue'
 import { useStore } from 'vuex'
 import TaskForm from './components/TaskForm.vue'
+import BoardForm from './components/BoardForm.vue'
+import ColumnForm from './components/ColumnForm.vue'
 
 export default {
   name: 'App',
   components: {
-    TaskForm
+    TaskForm,
+    BoardForm,
+    ColumnForm
   },
   setup() {
     const store = useStore()
     const draggedTask = ref(null)
 
-    const columns = computed(() => store.state.columns)
+    const boards = computed(() => store.state.boards)
+    const currentBoard = computed(() => store.getters.currentBoard)
+    const currentBoardId = computed({
+      get: () => store.state.currentBoardId,
+      set: (value) => store.dispatch('setCurrentBoard', value)
+    })
     const showTaskForm = computed(() => store.state.showTaskForm)
+    const showBoardForm = computed(() => store.state.showBoardForm)
+    const showColumnForm = computed(() => store.state.showColumnForm)
     const editingTask = computed(() => store.state.editingTask)
     const selectedColumn = computed(() => store.state.selectedColumn)
 
@@ -94,6 +137,17 @@ export default {
         })
       }
       store.dispatch('closeTaskForm')
+    }
+
+    const handleBoardSubmit = (boardData) => {
+      store.dispatch('addBoard', boardData)
+      store.dispatch('closeBoardForm')
+    }
+
+    const handleColumnSubmit = (columnData) => {
+      if (!columnData || !columnData.title || !columnData.title.trim()) return
+      store.dispatch('addColumn', columnData)
+      store.dispatch('closeColumnForm')
     }
 
     const handleDragStart = (event, { taskId, columnId }) => {
@@ -123,16 +177,26 @@ export default {
     }
 
     return {
-      columns,
+      boards,
+      currentBoard,
+      currentBoardId,
       showTaskForm,
+      showBoardForm,
+      showColumnForm,
       editingTask,
       selectedColumn,
       handleTaskSubmit,
+      handleBoardSubmit,
+      handleColumnSubmit,
       handleDragStart,
       handleDrop,
       openTaskForm,
       openEditTaskForm,
-      closeTaskForm: () => store.dispatch('closeTaskForm')
+      openBoardForm: () => store.dispatch('openBoardForm'),
+      openColumnForm: () => store.dispatch('openColumnForm'),
+      closeTaskForm: () => store.dispatch('closeTaskForm'),
+      closeBoardForm: () => store.dispatch('closeBoardForm'),
+      closeColumnForm: () => store.dispatch('closeColumnForm')
     }
   }
 }
@@ -157,17 +221,50 @@ export default {
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
-.add-board-btn {
+.nav-left {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.nav-actions {
+  display: flex;
+  gap: 1rem;
+}
+
+.board-select {
+  padding: 0.5rem;
+  border-radius: 6px;
+  border: 1px solid #e2e4ea;
+  font-size: 1rem;
+  min-width: 200px;
+}
+
+.action-btn {
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  border: 1px solid #e2e4ea;
+  background-color: white;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.action-btn:hover {
+  background-color: #f8f9fc;
+  border-color: #5e6ad2;
+  color: #5e6ad2;
+}
+
+.action-btn.primary {
   background-color: #5e6ad2;
   color: white;
   border: none;
-  padding: 0.5rem 1rem;
-  border-radius: 6px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-weight: 500;
+}
+
+.action-btn.primary:hover {
+  background-color: #4f58b8;
+  color: white;
 }
 
 .board-container {
@@ -183,6 +280,9 @@ export default {
   border-radius: 10px;
   min-width: 300px;
   padding: 1rem;
+  min-height: 200px;
+  display: flex;
+  flex-direction: column;
 }
 
 .column-header {
@@ -200,6 +300,7 @@ export default {
 }
 
 .tasks-container {
+  flex: 1;
   min-height: 100px;
 }
 
@@ -285,5 +386,39 @@ export default {
   background-color: #f8f9fc;
   border-color: #5e6ad2;
   color: #5e6ad2;
+}
+
+.add-column {
+  background-color: rgba(241, 242, 247, 0.6);
+  border: 2px dashed #e2e4ea;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 200px;
+}
+
+.add-column:hover {
+  background-color: rgba(241, 242, 247, 0.9);
+  border-color: #5e6ad2;
+}
+
+.add-column-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  color: #666;
+}
+
+.add-column:hover .add-column-content {
+  color: #5e6ad2;
+}
+
+.plus-icon {
+  font-size: 2rem;
+  font-weight: 300;
+  line-height: 1;
 }
 </style>

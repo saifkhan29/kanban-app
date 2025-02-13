@@ -3,114 +3,173 @@ import { createStore } from 'vuex'
 export default createStore({
   state() {
     return {
-      columns: [
+      boards: [
         {
           id: 1,
-          title: 'To Do',
-          tasks: []
-        },
-        {
-          id: 2,
-          title: 'In Progress',
-          tasks: []
-        },
-        {
-          id: 3,
-          title: 'Done',
-          tasks: []
+          title: 'Main Board',
+          columns: []
         }
       ],
+      currentBoardId: 1,
       showTaskForm: false,
+      showBoardForm: false,
+      showColumnForm: false,
       editingTask: null,
       selectedColumn: null
     }
   },
 
   mutations: {
-    ADD_TASK(state, { columnId, task }) {
-      const column = state.columns.find(col => col.id === columnId)
-      if (column) {
-        task.id = Date.now() // Simple way to generate unique ID
-        column.tasks.push(task)
+    ADD_BOARD(state, board) {
+      board.id = Date.now()
+      board.columns = []
+      state.boards.push(board)
+      state.currentBoardId = board.id
+    },
+
+    SET_CURRENT_BOARD(state, boardId) {
+      state.currentBoardId = boardId
+    },
+
+    ADD_COLUMN(state, { boardId, column }) {
+      const board = state.boards.find(b => b.id === boardId)
+      if (board) {
+        column.id = Date.now()
+        column.tasks = []
+        if (!board.columns) {
+          board.columns = []
+        }
+        board.columns.push(column)
       }
     },
 
-    UPDATE_TASK(state, { columnId, taskId, updatedTask }) {
-      const column = state.columns.find(col => col.id === columnId)
-      if (column) {
-        const taskIndex = column.tasks.findIndex(task => task.id === taskId)
-        if (taskIndex !== -1) {
-          column.tasks.splice(taskIndex, 1, { ...updatedTask, id: taskId })
+    ADD_TASK(state, { boardId, columnId, task }) {
+      const board = state.boards.find(b => b.id === boardId)
+      if (board) {
+        const column = board.columns.find(col => col.id === columnId)
+        if (column) {
+          task.id = Date.now()
+          column.tasks.push(task)
         }
       }
     },
 
-    DELETE_TASK(state, { columnId, taskId }) {
-      const column = state.columns.find(col => col.id === columnId)
-      if (column) {
-        column.tasks = column.tasks.filter(task => task.id !== taskId)
-      }
-    },
-
-    MOVE_TASK(state, { fromColumnId, toColumnId, taskId }) {
-      const fromColumn = state.columns.find(col => col.id === fromColumnId)
-      const toColumn = state.columns.find(col => col.id === toColumnId)
-      
-      if (fromColumn && toColumn) {
-        const taskIndex = fromColumn.tasks.findIndex(task => task.id === taskId)
-        if (taskIndex !== -1) {
-          const task = fromColumn.tasks[taskIndex]
-          fromColumn.tasks.splice(taskIndex, 1)
-          toColumn.tasks.push(task)
+    UPDATE_TASK(state, { boardId, columnId, taskId, updatedTask }) {
+      const board = state.boards.find(b => b.id === boardId)
+      if (board) {
+        const column = board.columns.find(col => col.id === columnId)
+        if (column) {
+          const taskIndex = column.tasks.findIndex(task => task.id === taskId)
+          if (taskIndex !== -1) {
+            column.tasks.splice(taskIndex, 1, { ...updatedTask, id: taskId })
+          }
         }
       }
     },
 
-    SET_SHOW_TASK_FORM(state, value) {
-      state.showTaskForm = value
+    DELETE_TASK(state, { boardId, columnId, taskId }) {
+      const board = state.boards.find(b => b.id === boardId)
+      if (board) {
+        const column = board.columns.find(col => col.id === columnId)
+        if (column) {
+          column.tasks = column.tasks.filter(task => task.id !== taskId)
+        }
+      }
     },
 
-    SET_EDITING_TASK(state, task) {
-      state.editingTask = task
+    MOVE_TASK(state, { boardId, fromColumnId, toColumnId, taskId }) {
+      const board = state.boards.find(b => b.id === boardId)
+      if (board) {
+        const fromColumn = board.columns.find(col => col.id === fromColumnId)
+        const toColumn = board.columns.find(col => col.id === toColumnId)
+        
+        if (fromColumn && toColumn) {
+          const taskIndex = fromColumn.tasks.findIndex(task => task.id === taskId)
+          if (taskIndex !== -1) {
+            const task = fromColumn.tasks[taskIndex]
+            fromColumn.tasks.splice(taskIndex, 1)
+            toColumn.tasks.push(task)
+          }
+        }
+      }
     },
 
-    SET_SELECTED_COLUMN(state, column) {
-      state.selectedColumn = column
-    }
+    SET_SHOW_TASK_FORM: (state, value) => state.showTaskForm = value,
+    SET_SHOW_BOARD_FORM: (state, value) => state.showBoardForm = value,
+    SET_SHOW_COLUMN_FORM: (state, value) => state.showColumnForm = value,
+    SET_EDITING_TASK: (state, task) => state.editingTask = task,
+    SET_SELECTED_COLUMN: (state, column) => state.selectedColumn = column
   },
 
   actions: {
-    addTask({ commit }, { columnId, task }) {
+    addBoard({ commit }, board) {
+      commit('ADD_BOARD', board)
+    },
+
+    setCurrentBoard({ commit }, boardId) {
+      commit('SET_CURRENT_BOARD', boardId)
+    },
+
+    addColumn({ commit, state }, column) {
+      if (!state.currentBoardId || !column) return
+      commit('ADD_COLUMN', { 
+        boardId: state.currentBoardId, 
+        column: {
+          title: column.title,
+          tasks: []
+        }
+      })
+    },
+
+    addTask({ commit, state }, { columnId, task }) {
       if (!columnId || !task) return
-      commit('ADD_TASK', { columnId, task })
+      commit('ADD_TASK', { 
+        boardId: state.currentBoardId,
+        columnId, 
+        task 
+      })
     },
 
-    updateTask({ commit }, { columnId, taskId, updatedTask }) {
+    updateTask({ commit, state }, { columnId, taskId, updatedTask }) {
       if (!columnId || !taskId || !updatedTask) return
-      commit('UPDATE_TASK', { columnId, taskId, updatedTask })
+      commit('UPDATE_TASK', { 
+        boardId: state.currentBoardId,
+        columnId, 
+        taskId, 
+        updatedTask 
+      })
     },
 
-    deleteTask({ commit }, { columnId, taskId }) {
-      if (!columnId || !taskId) return
-      commit('DELETE_TASK', { columnId, taskId })
-    },
-
-    moveTask({ commit }, { fromColumnId, toColumnId, taskId }) {
+    moveTask({ commit, state }, { fromColumnId, toColumnId, taskId }) {
       if (!fromColumnId || !toColumnId || !taskId) return
-      commit('MOVE_TASK', { fromColumnId, toColumnId, taskId })
+      commit('MOVE_TASK', { 
+        boardId: state.currentBoardId,
+        fromColumnId, 
+        toColumnId, 
+        taskId 
+      })
+    },
+
+    openBoardForm({ commit }) {
+      commit('SET_SHOW_BOARD_FORM', true)
+    },
+
+    closeBoardForm({ commit }) {
+      commit('SET_SHOW_BOARD_FORM', false)
+    },
+
+    openColumnForm({ commit }) {
+      commit('SET_SHOW_COLUMN_FORM', true)
+    },
+
+    closeColumnForm({ commit }) {
+      commit('SET_SHOW_COLUMN_FORM', false)
     },
 
     openTaskForm({ commit }, column) {
       if (!column) return
       commit('SET_SELECTED_COLUMN', column)
       commit('SET_EDITING_TASK', null)
-      commit('SET_SHOW_TASK_FORM', true)
-    },
-
-    openEditTaskForm({ commit }, { task, column }) {
-      if (!task || !column) return
-      commit('SET_SELECTED_COLUMN', column)
-      commit('SET_EDITING_TASK', task)
       commit('SET_SHOW_TASK_FORM', true)
     },
 
@@ -122,8 +181,8 @@ export default createStore({
   },
 
   getters: {
-    getColumnById: (state) => (id) => {
-      return state.columns.find(column => column.id === id)
+    currentBoard: (state) => {
+      return state.boards.find(board => board.id === state.currentBoardId)
     }
   }
 }) 
