@@ -4,14 +4,37 @@
       <div class="nav-left">
         <h1>Kanban Board</h1>
         <div class="board-selector" v-if="boards.length > 0">
-          <select 
-            v-model="currentBoardId" 
-            class="board-select"
+          <div 
+            class="custom-select" 
+            :class="{ 'active': isDropdownOpen }"
+            @click="toggleDropdown"
+            ref="dropdown"
           >
-            <option v-for="board in boards" :key="board.id" :value="board.id">
-              {{ board.title }}
-            </option>
-          </select>
+            <div class="selected-option">
+              <span>{{ currentBoard?.title || 'Select Board' }}</span>
+              <svg 
+                class="chevron-icon"
+                :class="{ 'rotate': isDropdownOpen }"
+                width="12" 
+                height="8" 
+                viewBox="0 0 12 8" 
+                fill="none"
+              >
+                <path d="M1 1.5L6 6.5L11 1.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+            </div>
+            <div class="options-list" v-show="isDropdownOpen">
+              <div 
+                v-for="board in boards" 
+                :key="board.id"
+                class="option"
+                :class="{ 'selected': board.id === currentBoardId }"
+                @click="selectBoard(board.id)"
+              >
+                {{ board.title }}
+              </div>
+            </div>
+          </div>
           <button 
             class="edit-board-btn" 
             @click="openEditBoardForm(currentBoard)"
@@ -107,7 +130,7 @@
 </template>
 
 <script>
-import { computed, ref } from 'vue'
+import { computed, ref, onMounted } from 'vue'
 import { useStore } from 'vuex'
 import TaskForm from './components/TaskForm.vue'
 import BoardForm from './components/BoardForm.vue'
@@ -123,6 +146,8 @@ export default {
   setup() {
     const store = useStore()
     const draggedTask = ref(null)
+    const isDropdownOpen = ref(false)
+    const dropdown = ref(null)
 
     const boards = computed(() => store.state.boards)
     const currentBoard = computed(() => store.getters.currentBoard)
@@ -208,6 +233,24 @@ export default {
       store.dispatch('openEditBoardForm', board)
     }
 
+    const toggleDropdown = () => {
+      isDropdownOpen.value = !isDropdownOpen.value
+    }
+
+    const selectBoard = (boardId) => {
+      store.dispatch('setCurrentBoard', boardId)
+      isDropdownOpen.value = false
+    }
+
+    // Add click outside handler to close dropdown
+    onMounted(() => {
+      document.addEventListener('click', (e) => {
+        if (dropdown.value && !dropdown.value.contains(e.target)) {
+          isDropdownOpen.value = false
+        }
+      })
+    })
+
     return {
       boards,
       currentBoard,
@@ -230,7 +273,11 @@ export default {
       closeTaskForm: () => store.dispatch('closeTaskForm'),
       closeBoardForm: () => store.dispatch('closeBoardForm'),
       closeColumnForm: () => store.dispatch('closeColumnForm'),
-      openEditBoardForm
+      openEditBoardForm,
+      isDropdownOpen,
+      dropdown,
+      toggleDropdown,
+      selectBoard
     }
   }
 }
@@ -293,12 +340,96 @@ html, body {
   gap: 0.5rem;
 }
 
-.board-select {
-  padding: 0.5rem;
-  border-radius: 6px;
-  border: 1px solid #e2e4ea;
-  font-size: 1rem;
+.custom-select {
+  position: relative;
   min-width: 200px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.selected-option {
+  background-color: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.95rem;
+  color: #2d3748;
+  transition: all 0.2s;
+}
+
+.custom-select:hover .selected-option {
+  border-color: #5e6ad2;
+}
+
+.custom-select.active .selected-option {
+  border-color: #5e6ad2;
+  box-shadow: 0 0 0 3px rgba(94, 106, 210, 0.1);
+}
+
+.chevron-icon {
+  transition: transform 0.2s;
+}
+
+.chevron-icon.rotate {
+  transform: rotate(180deg);
+}
+
+.options-list {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08);
+  max-height: 250px;
+  overflow-y: auto;
+  z-index: 100;
+  animation: slideDown 0.2s ease-out;
+}
+
+.option {
+  padding: 0.75rem 1rem;
+  transition: all 0.2s;
+}
+
+.option:hover {
+  background-color: #f7fafc;
+  color: #5e6ad2;
+}
+
+.option.selected {
+  background-color: #f1f5f9;
+  color: #5e6ad2;
+  font-weight: 500;
+}
+
+@keyframes slideDown {
+  from {
+    transform: translateY(-10px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Custom scrollbar for the options list */
+.options-list::-webkit-scrollbar {
+  width: 4px;
+}
+
+.options-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.options-list::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
 }
 
 .action-btn {
