@@ -115,20 +115,27 @@ export default createStore({
       }
     },
 
-    MOVE_TASK(state, { boardId, fromColumnId, toColumnId, taskId }) {
+    MOVE_TASK(state, { boardId, fromColumnId, toColumnId, taskId, toIndex }) {
       const board = state.boards.find(b => b.id === boardId)
-      if (board) {
-        const fromColumn = board.columns.find(col => col.id === fromColumnId)
-        const toColumn = board.columns.find(col => col.id === toColumnId)
-        
-        if (fromColumn && toColumn) {
-          const taskIndex = fromColumn.tasks.findIndex(task => task.id === taskId)
-          if (taskIndex !== -1) {
-            const task = fromColumn.tasks[taskIndex]
-            fromColumn.tasks.splice(taskIndex, 1)
-            toColumn.tasks.push(task)
-          }
-        }
+      if (!board) return
+
+      const fromColumn = board.columns.find(col => col.id === fromColumnId)
+      const toColumn = board.columns.find(col => col.id === toColumnId)
+      
+      if (!fromColumn || !toColumn) return
+
+      // Find and remove task from source
+      const taskIndex = fromColumn.tasks.findIndex(task => task.id === taskId)
+      if (taskIndex === -1) return
+      const [task] = fromColumn.tasks.splice(taskIndex, 1)
+
+      // Insert task at destination
+      if (toIndex === -1 || toIndex >= toColumn.tasks.length) {
+        // Append to end if toIndex is -1 or beyond array length
+        toColumn.tasks.push(task)
+      } else {
+        // Insert at specific position
+        toColumn.tasks.splice(toIndex, 0, task)
       }
     },
 
@@ -226,13 +233,14 @@ export default createStore({
       })
     },
 
-    moveTask({ commit, state }, { fromColumnId, toColumnId, taskId }) {
+    moveTask({ commit, state }, { fromColumnId, toColumnId, taskId, toIndex }) {
       if (!fromColumnId || !toColumnId || !taskId) return
       commit('MOVE_TASK', { 
         boardId: state.currentBoardId,
         fromColumnId, 
         toColumnId, 
-        taskId 
+        taskId,
+        toIndex
       })
     },
 

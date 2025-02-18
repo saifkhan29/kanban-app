@@ -80,11 +80,13 @@
         
         <div class="tasks-container">
           <div
-            v-for="task in column.tasks"
+            v-for="(task, index) in column.tasks"
             :key="task.id"
             class="task-card"
             draggable="true"
-            @dragstart="handleDragStart($event, { taskId: task.id, columnId: column.id })"
+            @dragstart="handleDragStart($event, { taskId: task.id, columnId: column.id, index })"
+            @dragover.prevent
+            @drop.stop="handleTaskDrop($event, column.id, index)"
             @click="openEditTaskForm(task, column)"
           >
             <h3>{{ task.title }}</h3>
@@ -246,19 +248,36 @@ export default {
       store.dispatch('closeColumnForm')
     }
 
-    const handleDragStart = (event, { taskId, columnId }) => {
-      draggedTask.value = { taskId, columnId }
+    const handleDragStart = (event, { taskId, columnId, index }) => {
+      draggedTask.value = { taskId, columnId, index }
       event.dataTransfer.effectAllowed = 'move'
     }
 
     const handleDrop = (event, toColumnId) => {
-      if (draggedTask.value && draggedTask.value.columnId !== toColumnId) {
-        store.dispatch('moveTask', {
-          fromColumnId: draggedTask.value.columnId,
-          toColumnId,
-          taskId: draggedTask.value.taskId
-        })
-      }
+      if (!draggedTask.value) return
+      
+      store.dispatch('moveTask', {
+        fromColumnId: draggedTask.value.columnId,
+        toColumnId,
+        taskId: draggedTask.value.taskId,
+        toIndex: -1 // Append to end of column
+      })
+      
+      draggedTask.value = null
+    }
+
+    const handleTaskDrop = (event, toColumnId, toIndex) => {
+      event.stopPropagation()
+      if (!draggedTask.value) return
+
+      store.dispatch('moveTask', {
+        fromColumnId: draggedTask.value.columnId,
+        toColumnId,
+        taskId: draggedTask.value.taskId,
+        fromIndex: draggedTask.value.index,
+        toIndex
+      })
+      
       draggedTask.value = null
     }
 
@@ -316,6 +335,7 @@ export default {
       handleColumnSubmit,
       handleDragStart,
       handleDrop,
+      handleTaskDrop,
       openTaskForm,
       openEditTaskForm,
       openBoardForm: () => store.dispatch('openBoardForm'),
