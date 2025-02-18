@@ -22,6 +22,32 @@
         </div>
         
         <div class="form-group">
+          <label>Images</label>
+          <div class="image-upload-area">
+            <input 
+              type="file"
+              ref="fileInput"
+              @change="handleImageUpload"
+              accept="image/*"
+              multiple
+              class="hidden"
+            >
+            <div class="upload-button" @click="$refs.fileInput.click()">
+              <span class="plus">+</span>
+              <span>Add Images</span>
+            </div>
+            <div class="image-preview-container" v-if="taskData.images.length > 0">
+              <div v-for="(image, index) in taskData.images" 
+                   :key="index" 
+                   class="image-preview">
+                <img :src="image.url" :alt="image.name">
+                <button class="remove-image" @click.prevent="removeImage(index)">×</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="form-group">
           <label>Priority</label>
           <select v-model="taskData.priority">
             <option value="low">Low</option>
@@ -75,7 +101,8 @@ export default {
         title: '',
         description: '',
         priority: 'medium',
-        tags: []
+        tags: [],
+        images: []
       })
     },
     isEdit: {
@@ -88,13 +115,23 @@ export default {
       title: '',
       description: '',
       priority: 'medium',
-      tags: []
+      tags: [],
+      images: []
     })
     const newTag = ref('')
+    const fileInput = ref(null)
 
-    watch(() => props.isEdit, (newVal) => {
-      if (newVal) {
-        taskData.value = { ...props.task }
+    watch(() => props.task, (newTask) => {
+      if (newTask && props.isEdit) {
+        taskData.value = { ...newTask }
+      } else {
+        taskData.value = {
+          title: '',
+          description: '',
+          priority: 'medium',
+          tags: [],
+          images: []
+        }
       }
     }, { immediate: true })
 
@@ -109,12 +146,60 @@ export default {
       taskData.value.tags.splice(index, 1)
     }
 
+    const handleImageUpload = (event) => {
+      const files = Array.from(event.target.files)
+      
+      files.forEach(file => {
+        if (file.type.startsWith('image/')) {
+          const reader = new FileReader()
+          
+          reader.onload = (e) => {
+            taskData.value.images.push({
+              url: e.target.result,
+              name: file.name,
+              file: file
+            })
+          }
+          
+          reader.readAsDataURL(file)
+        }
+      })
+      
+      event.target.value = ''
+    }
+
+    const removeImage = (index) => {
+      taskData.value.images.splice(index, 1)
+    }
+
     const submitForm = () => {
-      emit('submit', { ...taskData.value })
-      close()
+      if (!taskData.value.title.trim()) {
+        console.log('Empty title')
+        return
+      }
+      
+      const formData = {
+        ...taskData.value,
+        title: taskData.value.title.trim(),
+        description: taskData.value.description.trim(),
+        priority: taskData.value.priority || 'medium',
+        tags: taskData.value.tags || [],
+        images: taskData.value.images || []
+      }
+      
+      console.log('Emitting submit with data:', formData)
+      emit('submit', formData)
+      emit('close')
     }
 
     const close = () => {
+      taskData.value = {
+        title: '',
+        description: '',
+        priority: 'medium',
+        tags: [],
+        images: []
+      }
       emit('close')
     }
 
@@ -123,6 +208,9 @@ export default {
       newTag,
       addTag,
       removeTag,
+      fileInput,
+      handleImageUpload,
+      removeImage,
       submitForm,
       close
     }
@@ -239,5 +327,80 @@ textarea {
 
 .submit-btn:hover {
   background-color: #4f58b8;
+}
+
+.image-upload-area {
+  margin-top: 0.5rem;
+}
+
+.hidden {
+  display: none;
+}
+
+.upload-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background-color: #f8fafc;
+  border: 1px dashed #cbd5e1;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.upload-button:hover {
+  background-color: #f1f5f9;
+  border-color: #5e6ad2;
+  color: #5e6ad2;
+}
+
+.plus {
+  font-size: 1.2rem;
+  font-weight: 300;
+}
+
+.image-preview-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.image-preview {
+  position: relative;
+  width: 100px;
+  height: 100px;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.image-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.remove-image {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background-color: rgba(0, 0, 0, 0.5);
+  color: white;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  line-height: 1;
+  transition: all 0.2s;
+}
+
+.remove-image:hover {
+  background-color: rgba(0, 0, 0, 0.7);
 }
 </style> 

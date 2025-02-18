@@ -89,6 +89,15 @@
           >
             <h3>{{ task.title }}</h3>
             <p>{{ task.description }}</p>
+            
+            <div v-if="task.images && task.images.length > 0" class="task-images">
+              <div v-for="(image, index) in task.images" 
+                   :key="index" 
+                   class="task-image">
+                <img :src="image.url" :alt="image.name">
+              </div>
+            </div>
+            
             <div class="task-footer">
               <div class="priority" :class="task.priority">
                 {{ task.priority }}
@@ -137,6 +146,14 @@
       @submit="handleTaskSubmit"
       @close="closeTaskForm"
     />
+
+    <!-- Add this temporarily to debug -->
+    <div style="display: none">
+      Debug: 
+      Current Board ID: {{ currentBoardId }}
+      Columns: {{ currentBoard?.columns?.length }}
+      Selected Column: {{ selectedColumn?.id }}
+    </div>
   </div>
 </template>
 
@@ -179,7 +196,13 @@ export default {
     const editingColumn = computed(() => store.state.editingColumn)
 
     const handleTaskSubmit = (taskData) => {
-      if (!selectedColumn.value) return
+      console.log('handleTaskSubmit called with:', taskData)
+      console.log('Current selectedColumn:', selectedColumn.value)
+
+      if (!selectedColumn.value) {
+        console.error('No selected column')
+        return
+      }
 
       if (editingTask.value) {
         store.dispatch('updateTask', {
@@ -193,6 +216,7 @@ export default {
           task: taskData
         })
       }
+
       store.dispatch('closeTaskForm')
     }
 
@@ -733,5 +757,28 @@ html, body {
 .edit-column-btn:hover {
   background-color: rgba(94, 106, 210, 0.1);
   color: #5e6ad2;
+}
+
+/* Add these new styles */
+.task-images {
+  display: flex;
+  gap: 0.5rem;
+  margin: 0.5rem 0;
+  overflow-x: auto;
+  padding-bottom: 0.5rem;
+}
+
+.task-image {
+  width: 80px;
+  height: 80px;
+  border-radius: 4px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.task-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 </style>

@@ -39,24 +39,53 @@ export default createStore({
     ADD_COLUMN(state, { boardId, column }) {
       const board = state.boards.find(b => b.id === boardId)
       if (board) {
-        column.id = Date.now()
-        column.tasks = []
+        const newColumn = {
+          id: Date.now(),
+          title: column.title,
+          tasks: []
+        }
         if (!board.columns) {
           board.columns = []
         }
-        board.columns.push(column)
+        board.columns.push(newColumn)
+        console.log('Added new column:', newColumn)
       }
     },
 
     ADD_TASK(state, { boardId, columnId, task }) {
+      console.log('ADD_TASK mutation called with:', { boardId, columnId, task })
+      
       const board = state.boards.find(b => b.id === boardId)
-      if (board) {
-        const column = board.columns.find(col => col.id === columnId)
-        if (column) {
-          task.id = Date.now()
-          column.tasks.push(task)
-        }
+      if (!board) {
+        console.error('Board not found:', boardId)
+        return
       }
+
+      const column = board.columns.find(col => col.id === columnId)
+      if (!column) {
+        console.error('Column not found:', columnId)
+        return
+      }
+
+      const newTask = {
+        id: Date.now(),
+        title: task.title,
+        description: task.description,
+        priority: task.priority || 'medium',
+        tags: task.tags || [],
+        images: task.images || [],
+        createdAt: new Date().toISOString()
+      }
+
+      console.log('Adding new task to column:', column.id, newTask)
+      
+      // Ensure column.tasks exists
+      if (!column.tasks) {
+        column.tasks = []
+      }
+      
+      column.tasks.push(newTask)
+      console.log('Updated column tasks:', column.tasks)
     },
 
     UPDATE_TASK(state, { boardId, columnId, taskId, updatedTask }) {
@@ -66,7 +95,11 @@ export default createStore({
         if (column) {
           const taskIndex = column.tasks.findIndex(task => task.id === taskId)
           if (taskIndex !== -1) {
-            column.tasks.splice(taskIndex, 1, { ...updatedTask, id: taskId })
+            column.tasks[taskIndex] = {
+              ...updatedTask,
+              id: taskId,
+              createdAt: column.tasks[taskIndex].createdAt
+            }
           }
         }
       }
@@ -102,8 +135,18 @@ export default createStore({
     SET_SHOW_TASK_FORM: (state, value) => state.showTaskForm = value,
     SET_SHOW_BOARD_FORM: (state, value) => state.showBoardForm = value,
     SET_SHOW_COLUMN_FORM: (state, value) => state.showColumnForm = value,
-    SET_EDITING_TASK: (state, task) => state.editingTask = task,
-    SET_SELECTED_COLUMN: (state, column) => state.selectedColumn = column,
+    SET_EDITING_TASK: (state, payload) => {
+      if (payload === null) {
+        state.editingTask = null
+      } else {
+        state.editingTask = payload.task
+        state.selectedColumn = payload.column
+      }
+    },
+    SET_SELECTED_COLUMN: (state, column) => {
+      console.log('Setting selected column:', column?.id)
+      state.selectedColumn = column
+    },
 
     UPDATE_BOARD(state, { boardId, title }) {
       const board = state.boards.find(b => b.id === boardId)
@@ -128,6 +171,12 @@ export default createStore({
 
     SET_EDITING_COLUMN(state, column) {
       state.editingColumn = column
+    },
+
+    CLOSE_TASK_FORM: (state) => {
+      state.showTaskForm = false
+      state.editingTask = null
+      state.selectedColumn = null
     }
   },
 
@@ -153,7 +202,12 @@ export default createStore({
     },
 
     addTask({ commit, state }, { columnId, task }) {
-      if (!columnId || !task) return
+      console.log('addTask action:', { columnId, task, currentBoardId: state.currentBoardId })
+      if (!columnId || !task || !task.title) {
+        console.warn('Invalid task data:', { columnId, task })
+        return
+      }
+      
       commit('ADD_TASK', { 
         boardId: state.currentBoardId,
         columnId, 
@@ -162,7 +216,8 @@ export default createStore({
     },
 
     updateTask({ commit, state }, { columnId, taskId, updatedTask }) {
-      if (!columnId || !taskId || !updatedTask) return
+      if (!columnId || !taskId || !updatedTask || !updatedTask.title) return
+      
       commit('UPDATE_TASK', { 
         boardId: state.currentBoardId,
         columnId, 
@@ -200,16 +255,19 @@ export default createStore({
     },
 
     openTaskForm({ commit }, column) {
-      if (!column) return
+      if (!column) {
+        console.warn('No column provided to openTaskForm')
+        return
+      }
       commit('SET_SELECTED_COLUMN', column)
       commit('SET_EDITING_TASK', null)
       commit('SET_SHOW_TASK_FORM', true)
+      
+      console.log('Opening task form with column:', column.id)
     },
 
     closeTaskForm({ commit }) {
-      commit('SET_SHOW_TASK_FORM', false)
-      commit('SET_EDITING_TASK', null)
-      commit('SET_SELECTED_COLUMN', null)
+      commit('CLOSE_TASK_FORM')
     },
 
     updateBoard({ commit }, { boardId, title }) {
@@ -234,6 +292,12 @@ export default createStore({
     openEditColumnForm({ commit }, column) {
       commit('SET_EDITING_COLUMN', column)
       commit('SET_SHOW_COLUMN_FORM', true)
+    },
+
+    openEditTaskForm({ commit }, { task, column }) {
+      if (!task || !column) return
+      commit('SET_EDITING_TASK', { task, column })
+      commit('SET_SHOW_TASK_FORM', true)
     },
   },
 
