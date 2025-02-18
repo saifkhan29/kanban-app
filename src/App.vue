@@ -87,12 +87,20 @@
             @dragstart="handleDragStart($event, { taskId: task.id, columnId: column.id, index })"
             @dragover.prevent
             @drop.stop="handleTaskDrop($event, column.id, index)"
-            @click="openEditTaskForm(task, column)"
           >
-            <h3>{{ task.title }}</h3>
-            <p>{{ task.description }}</p>
+            <div class="task-header">
+              <h3 @click="openTaskView(task, column)">{{ task.title }}</h3>
+              <button 
+                class="edit-task-btn" 
+                @click.stop="openEditTaskForm(task, column)"
+                title="Edit Task"
+              >
+                <span>✎</span>
+              </button>
+            </div>
+            <p @click="openTaskView(task, column)">{{ task.description }}</p>
             
-            <div v-if="task.images && task.images.length > 0" class="task-images">
+            <div v-if="task.images && task.images.length > 0" class="task-images" @click="openTaskView(task, column)">
               <div v-for="(image, index) in task.images" 
                    :key="index" 
                    class="task-image">
@@ -100,7 +108,7 @@
               </div>
             </div>
             
-            <div class="task-footer">
+            <div class="task-footer" @click="openTaskView(task, column)">
               <div class="priority" :class="task.priority">
                 {{ task.priority }}
               </div>
@@ -156,6 +164,15 @@
       Columns: {{ currentBoard?.columns?.length }}
       Selected Column: {{ selectedColumn?.id }}
     </div>
+
+    <!-- Add TaskView component -->
+    <TaskView
+      v-if="viewingTask"
+      :task="viewingTask"
+      :column="viewingColumn"
+      @close="closeTaskView"
+      @edit="openEditTaskForm"
+    />
   </div>
 </template>
 
@@ -165,13 +182,15 @@ import { useStore } from 'vuex'
 import TaskForm from './components/TaskForm.vue'
 import BoardForm from './components/BoardForm.vue'
 import ColumnForm from './components/ColumnForm.vue'
+import TaskView from './components/TaskView.vue'
 
 export default {
   name: 'App',
   components: {
     TaskForm,
     BoardForm,
-    ColumnForm
+    ColumnForm,
+    TaskView
   },
   setup() {
     const store = useStore()
@@ -196,6 +215,8 @@ export default {
     const selectedColumn = computed(() => store.state.selectedColumn)
     const editingBoard = computed(() => store.state.editingBoard)
     const editingColumn = computed(() => store.state.editingColumn)
+    const viewingTask = ref(null)
+    const viewingColumn = ref(null)
 
     const handleTaskSubmit = (taskData) => {
       console.log('handleTaskSubmit called with:', taskData)
@@ -310,6 +331,16 @@ export default {
       isDropdownOpen.value = false
     }
 
+    const openTaskView = (task, column) => {
+      viewingTask.value = task
+      viewingColumn.value = column
+    }
+
+    const closeTaskView = () => {
+      viewingTask.value = null
+      viewingColumn.value = null
+    }
+
     // Add click outside handler to close dropdown
     onMounted(() => {
       document.addEventListener('click', (e) => {
@@ -348,7 +379,11 @@ export default {
       isDropdownOpen,
       dropdown,
       toggleDropdown,
-      selectBoard
+      selectBoard,
+      viewingTask,
+      viewingColumn,
+      openTaskView,
+      closeTaskView
     }
   }
 }
@@ -623,15 +658,48 @@ html, body {
   transform: translateY(-2px);
 }
 
+.task-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.edit-task-btn {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  border: none;
+  background-color: transparent;
+  color: #64748b;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9rem;
+  opacity: 0.8;
+  transition: all 0.2s;
+}
+
+.task-card:hover .edit-task-btn {
+  color: #5e6ad2;
+}
+
+.edit-task-btn:hover {
+  background-color: rgba(94, 106, 210, 0.1);
+  color: #5e6ad2;
+  opacity: 1;
+}
+
 .task-card h3 {
-  margin: 0 0 0.5rem 0;
-  font-size: 1rem;
+  flex: 1;
+  cursor: pointer;
 }
 
 .task-card p {
-  margin: 0;
-  color: #666;
-  font-size: 0.9rem;
+  cursor: pointer;
 }
 
 .task-footer {
