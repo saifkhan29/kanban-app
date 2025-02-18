@@ -510,20 +510,29 @@ html, body {
 .column-header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
   margin-bottom: 1rem;
 }
 
 .column-title {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 0.75rem;
 }
 
 .title-wrapper {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 0.5rem;
+  flex: 1; /* Take up available space */
+}
+
+.title-wrapper h2 {
+  margin: 0;
+  line-height: 1.4;
+  font-size: 1rem;
+  word-break: break-word;
+  flex: 1; /* Take up available space */
 }
 
 .task-count {
@@ -531,6 +540,8 @@ html, body {
   padding: 0.25rem 0.75rem;
   border-radius: 12px;
   font-size: 0.9rem;
+  white-space: nowrap; /* Prevent wrapping */
+  align-self: flex-start; /* Align with first line */
 }
 
 .tasks-container {
@@ -621,6 +632,8 @@ html, body {
 }
 
 .add-task-icon {
+  align-self: flex-start;
+  margin-top: 0.25rem;
   width: 24px;
   height: 24px;
   border-radius: 6px;
